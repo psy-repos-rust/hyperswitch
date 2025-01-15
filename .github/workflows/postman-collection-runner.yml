@@ -17,7 +17,7 @@ env:
   CONNECTORS: stripe
   RUST_BACKTRACE: short
   RUSTUP_MAX_RETRIES: 10
-  RUST_MIN_STACK: 8388608
+  RUST_MIN_STACK: 10485760
 
 jobs:
   runner:
@@ -61,7 +61,7 @@ jobs:
           CONNECTOR_AUTH_PASSPHRASE: ${{ secrets.CONNECTOR_AUTH_PASSPHRASE }}
           CONNECTOR_CREDS_S3_BUCKET_URI: ${{ secrets.CONNECTOR_CREDS_S3_BUCKET_URI}}
           DESTINATION_FILE_NAME: "connector_auth.toml.gpg"
-          S3_SOURCE_FILE_NAME: "cf05a6ab-525e-4888-98b3-3b4a443b87c0.toml.gpg"
+          S3_SOURCE_FILE_NAME: "95aa1243-4caa-4539-a65a-723aa5cbe3d7.toml.gpg"
         shell: bash
         run: |
           mkdir -p ${HOME}/target/secrets ${HOME}/target/test
@@ -94,6 +94,12 @@ jobs:
         if: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name)) || (github.event_name == 'merge_group')}}
         uses: Swatinem/rust-cache@v2.7.0
 
+      - name: Install Protoc
+        if: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name)) || (github.event_name == 'merge_group')}}
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Diesel CLI with Postgres Support
         if: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name)) || (github.event_name == 'merge_group')}}
         uses: baptiste0928/cargo-install@v2.2.0
@@ -102,12 +108,17 @@ jobs:
           features: postgres
           args: "--no-default-features"
 
+      - uses: baptiste0928/cargo-install@v2.2.0
+        if: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name)) || (github.event_name == 'merge_group')}}
+        with:
+          crate: just
+
       - name: Diesel migration run
         if: ${{ ((github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name)) || (github.event_name == 'merge_group')}}
         shell: bash
         env:
           DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
-        run: diesel migration run
+        run: just migrate run --locked-schema
 
       - name: Install newman from fork
         run: npm ci

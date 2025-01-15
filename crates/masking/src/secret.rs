@@ -1,12 +1,9 @@
-//!
 //! Structure describing secret.
-//!
 
 use std::{fmt, marker::PhantomData};
 
-use crate::{strategy::Strategy, PeekInterface};
+use crate::{strategy::Strategy, PeekInterface, StrongSecret};
 
-///
 /// Secret thing.
 ///
 /// To get access to value use method `expose()` of trait [`crate::ExposeInterface`].
@@ -39,7 +36,6 @@ use crate::{strategy::Strategy, PeekInterface};
 ///
 /// assert_eq!("hello", &format!("{:?}", my_secret));
 /// ```
-///
 pub struct Secret<Secret, MaskingStrategy = crate::WithType>
 where
     MaskingStrategy: Strategy<Secret>,
@@ -80,6 +76,14 @@ where
         MaskingStrategy: Strategy<OtherSecretValue>,
     {
         f(self.inner_secret).into()
+    }
+
+    /// Convert to [`StrongSecret`]
+    pub fn into_strong(self) -> StrongSecret<SecretValue, MaskingStrategy>
+    where
+        SecretValue: zeroize::DefaultIsZeroes,
+    {
+        StrongSecret::new(self.inner_secret)
     }
 }
 

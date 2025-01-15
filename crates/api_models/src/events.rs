@@ -1,3 +1,4 @@
+pub mod apple_pay_certificates_migration;
 pub mod connector_onboarding;
 pub mod customer;
 pub mod dispute;
@@ -15,102 +16,179 @@ pub mod user_role;
 
 use common_utils::{
     events::{ApiEventMetric, ApiEventsType},
-    impl_misc_api_event_type,
+    impl_api_event_type,
 };
 
+use crate::customers::CustomerListRequest;
 #[allow(unused_imports)]
 use crate::{
     admin::*,
     analytics::{
-        api_event::*, connector_events::ConnectorEventsRequest,
-        outgoing_webhook_event::OutgoingWebhookLogsRequest, sdk_events::*, *,
+        api_event::*, auth_events::*, connector_events::ConnectorEventsRequest,
+        outgoing_webhook_event::OutgoingWebhookLogsRequest, sdk_events::*, search::*, *,
     },
     api_keys::*,
     cards_info::*,
     disputes::*,
     files::*,
     mandates::*,
+    organization::{
+        OrganizationCreateRequest, OrganizationId, OrganizationResponse, OrganizationUpdateRequest,
+    },
     payment_methods::*,
     payments::*,
+    user::{UserKeyTransferRequest, UserTransferKeyResponse},
     verifications::*,
 };
 
-impl ApiEventMetric for TimeRange {}
+impl ApiEventMetric for GetPaymentIntentFiltersRequest {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Analytics)
+    }
+}
 
-impl_misc_api_event_type!(
-    PaymentMethodId,
-    PaymentsSessionResponse,
-    PaymentMethodCreate,
-    PaymentLinkInitiateRequest,
-    RetrievePaymentLinkResponse,
-    MandateListConstraints,
-    CreateFileResponse,
-    MerchantConnectorResponse,
-    MerchantConnectorId,
-    MandateResponse,
-    MandateRevokedResponse,
-    RetrievePaymentLinkRequest,
-    PaymentLinkListConstraints,
-    MandateId,
-    DisputeListConstraints,
-    RetrieveApiKeyResponse,
-    BusinessProfileResponse,
-    BusinessProfileUpdate,
-    BusinessProfileCreate,
-    RevokeApiKeyResponse,
-    ToggleKVResponse,
-    ToggleKVRequest,
-    MerchantAccountDeleteResponse,
-    MerchantAccountUpdate,
-    CardInfoResponse,
-    CreateApiKeyResponse,
-    CreateApiKeyRequest,
-    MerchantConnectorDeleteResponse,
-    MerchantConnectorUpdate,
-    MerchantConnectorCreate,
-    MerchantId,
-    CardsInfoRequest,
-    MerchantAccountResponse,
-    MerchantAccountListRequest,
-    MerchantAccountCreate,
-    PaymentsSessionRequest,
-    ApplepayMerchantVerificationRequest,
-    ApplepayMerchantResponse,
-    ApplepayVerifiedDomainsResponse,
-    UpdateApiKeyRequest,
-    GetApiEventFiltersRequest,
-    ApiEventFiltersResponse,
-    GetInfoResponse,
-    GetPaymentMetricRequest,
-    GetRefundMetricRequest,
-    GetSdkEventMetricRequest,
-    GetPaymentFiltersRequest,
-    PaymentFiltersResponse,
-    GetRefundFilterRequest,
-    RefundFiltersResponse,
-    GetSdkEventFiltersRequest,
-    SdkEventFiltersResponse,
-    ApiLogsRequest,
-    GetApiEventMetricRequest,
-    SdkEventsRequest,
-    ReportRequest,
-    ConnectorEventsRequest,
-    OutgoingWebhookLogsRequest
+impl ApiEventMetric for GetPaymentIntentMetricRequest {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Analytics)
+    }
+}
+
+impl ApiEventMetric for PaymentIntentFiltersResponse {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Analytics)
+    }
+}
+
+impl_api_event_type!(
+    Miscellaneous,
+    (
+        PaymentMethodId,
+        PaymentMethodCreate,
+        PaymentLinkInitiateRequest,
+        RetrievePaymentLinkResponse,
+        MandateListConstraints,
+        CreateFileResponse,
+        MerchantConnectorResponse,
+        MerchantConnectorId,
+        MandateResponse,
+        MandateRevokedResponse,
+        RetrievePaymentLinkRequest,
+        PaymentLinkListConstraints,
+        MandateId,
+        DisputeListGetConstraints,
+        RetrieveApiKeyResponse,
+        ProfileResponse,
+        ProfileUpdate,
+        ProfileCreate,
+        RevokeApiKeyResponse,
+        ToggleKVResponse,
+        ToggleKVRequest,
+        ToggleAllKVRequest,
+        ToggleAllKVResponse,
+        MerchantAccountDeleteResponse,
+        MerchantAccountUpdate,
+        CardInfoResponse,
+        CreateApiKeyResponse,
+        CreateApiKeyRequest,
+        ListApiKeyConstraints,
+        MerchantConnectorDeleteResponse,
+        MerchantConnectorUpdate,
+        MerchantConnectorCreate,
+        MerchantId,
+        CardsInfoRequest,
+        MerchantAccountResponse,
+        MerchantAccountListRequest,
+        MerchantAccountCreate,
+        PaymentsSessionRequest,
+        ApplepayMerchantVerificationRequest,
+        ApplepayMerchantResponse,
+        ApplepayVerifiedDomainsResponse,
+        UpdateApiKeyRequest,
+        GetApiEventFiltersRequest,
+        ApiEventFiltersResponse,
+        GetInfoResponse,
+        GetPaymentMetricRequest,
+        GetRefundMetricRequest,
+        GetActivePaymentsMetricRequest,
+        GetSdkEventMetricRequest,
+        GetAuthEventMetricRequest,
+        GetPaymentFiltersRequest,
+        PaymentFiltersResponse,
+        GetRefundFilterRequest,
+        RefundFiltersResponse,
+        GetSdkEventFiltersRequest,
+        SdkEventFiltersResponse,
+        ApiLogsRequest,
+        GetApiEventMetricRequest,
+        SdkEventsRequest,
+        ReportRequest,
+        ConnectorEventsRequest,
+        OutgoingWebhookLogsRequest,
+        GetGlobalSearchRequest,
+        GetSearchRequest,
+        GetSearchResponse,
+        GetSearchRequestWithIndex,
+        GetDisputeFilterRequest,
+        DisputeFiltersResponse,
+        GetDisputeMetricRequest,
+        SankeyResponse,
+        OrganizationResponse,
+        OrganizationCreateRequest,
+        OrganizationUpdateRequest,
+        OrganizationId,
+        CustomerListRequest
+    )
 );
 
-#[cfg(feature = "stripe")]
-impl_misc_api_event_type!(
-    StripeSetupIntentResponse,
-    StripeRefundResponse,
-    StripePaymentIntentListResponse,
-    StripePaymentIntentResponse,
-    CustomerDeleteResponse,
-    CustomerPaymentMethodListResponse,
-    CreateCustomerResponse
+impl_api_event_type!(
+    Keymanager,
+    (
+        TransferKeyResponse,
+        MerchantKeyTransferRequest,
+        UserKeyTransferRequest,
+        UserTransferKeyResponse
+    )
 );
 
 impl<T> ApiEventMetric for MetricsResponse<T> {
     fn get_api_event_type(&self) -> Option<ApiEventsType> {
         Some(ApiEventsType::Miscellaneous)
+    }
+}
+
+impl<T> ApiEventMetric for PaymentsMetricsResponse<T> {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Miscellaneous)
+    }
+}
+
+impl<T> ApiEventMetric for PaymentIntentsMetricsResponse<T> {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Miscellaneous)
+    }
+}
+
+impl<T> ApiEventMetric for RefundsMetricsResponse<T> {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Miscellaneous)
+    }
+}
+
+impl<T> ApiEventMetric for DisputesMetricsResponse<T> {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::Miscellaneous)
+    }
+}
+
+#[cfg(all(feature = "v2", feature = "payment_methods_v2"))]
+impl ApiEventMetric for PaymentMethodIntentCreate {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::PaymentMethodCreate)
+    }
+}
+
+impl ApiEventMetric for DisputeListFilters {
+    fn get_api_event_type(&self) -> Option<ApiEventsType> {
+        Some(ApiEventsType::ResourceListAPI)
     }
 }

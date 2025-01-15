@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use error_stack::IntoReport;
 use redis_interface as redis;
 use router_env::{logger, tracing};
 
@@ -66,17 +65,15 @@ impl Store {
                 .stream_read_entries(stream_name, stream_id, Some(max_read_count))
                 .await
                 .map_err(errors::DrainerError::from)
-                .into_report()
         })
         .await;
 
         metrics::REDIS_STREAM_READ_TIME.record(
-            &metrics::CONTEXT,
             execution_time,
-            &[metrics::KeyValue::new("stream", stream_name.to_owned())],
+            router_env::metric_attributes!(("stream", stream_name.to_owned())),
         );
 
-        output
+        Ok(output?)
     }
     pub async fn trim_from_stream(
         &self,
@@ -92,25 +89,22 @@ impl Store {
                     .redis_conn
                     .stream_trim_entries(stream_name, (trim_kind, trim_type, trim_id))
                     .await
-                    .map_err(errors::DrainerError::from)
-                    .into_report()?;
+                    .map_err(errors::DrainerError::from)?;
 
                 // Since xtrim deletes entries below given id excluding the given id.
                 // Hence, deleting the minimum entry id
                 self.redis_conn
                     .stream_delete_entries(stream_name, minimum_entry_id)
                     .await
-                    .map_err(errors::DrainerError::from)
-                    .into_report()?;
+                    .map_err(errors::DrainerError::from)?;
 
                 Ok(trim_result)
             })
             .await;
 
         metrics::REDIS_STREAM_TRIM_TIME.record(
-            &metrics::CONTEXT,
             execution_time,
-            &[metrics::KeyValue::new("stream", stream_name.to_owned())],
+            router_env::metric_attributes!(("stream", stream_name.to_owned())),
         );
 
         // adding 1 because we are deleting the given id too

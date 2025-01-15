@@ -202,7 +202,6 @@ pub mod timestamp {
 }
 
 /// <https://github.com/serde-rs/serde/issues/994#issuecomment-316895860>
-
 pub mod json_string {
     use serde::de::{self, Deserialize, DeserializeOwned, Deserializer};
     use serde_json;
@@ -263,5 +262,24 @@ pub mod iso8601custom {
             let utc_date_time = offset_date_time.to_offset(UtcOffset::UTC);
             PrimitiveDateTime::new(utc_date_time.date(), utc_date_time.time())
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+    use serde_json::json;
+
+    #[test]
+    fn test_leap_second_parse() {
+        #[derive(Serialize, Deserialize)]
+        struct Try {
+            #[serde(with = "crate::custom_serde::iso8601")]
+            f: time::PrimitiveDateTime,
+        }
+        let leap_second_date_time = json!({"f": "2023-12-31T23:59:60.000Z"});
+        let deser = serde_json::from_value::<Try>(leap_second_date_time);
+
+        assert!(deser.is_ok())
     }
 }
